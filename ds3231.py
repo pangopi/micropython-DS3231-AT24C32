@@ -143,7 +143,7 @@ class DS3231:
             2 = 4.096 kHz,
             3 = 8.192 kHz"""
         if freq is None:
-            return self.i2c.readfrom_mem(self.addr, CONTROL_REG, 1)
+            return self.i2c.readfrom_mem(self.addr, CONTROL_REG, 1)[0]
 
         if not freq:
             # Set INTCN (bit 2) to 1 and both ALIE (bits 1 & 0) to 0
