@@ -19,12 +19,10 @@ from ds3231 import DS3231
 i2c = I2C(sda=Pin(4), scl=Pin(5))
 
 ds = DS3231(i2c)
-
-### Time functions
-set the time with:
 ```
+### Time functions
 
-# Set the date and time
+Example of setting the date and time:
 ```python
 year = 2020 # Can be yyyy or yy format
 month = 10
