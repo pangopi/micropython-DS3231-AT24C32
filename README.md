@@ -1,11 +1,22 @@
 # micropython-DS3231-AT24C32
 MicroPython driver for DS3231 RTC and AT24C32 EEPROM module.
 
+EEPROM Driver coming soon!
+
 ## DS3231N
-Driver for the Dallas DS3231 highly accurate RTC module.
-Driver implements both alarms and all available match triggers, interrupts and checks for both alarms.
-Square wave output can be selected.
-Checking for alarms, toggling square wave output do not allocate memory in the heap.
+Driver for the Dallas DS3231, a highly accurate RTC IC.
+
+I wrote this driver to make an easier to use and complete driver to access all the functions the DS3231 has. The driver has been designed for use with an ESP8266 but should work on fine on other devices as long as an I2C instance can be given.
+
+Some care has been put into memory use, with most variables buffered when constructing. Checking the alarms and setting the SQW/INT doesn't use memory allocation in the heap and can be used in ISR. This does not imply methods are thread safe.
+
+This driver implements both alarms and all available match triggers, interrupts and checks.
+
+Oscillator Stop Flag (OSF) is checked when displaying the time. Giving an indication of the validity of time data. When not printing to the REPL the OSF can be cheked manually.
+
+Square wave output and also the crystal output can be set.
+
+The temperature readout and aging offset options have not been implemented yet. I see no priority to implement temperature data since I can't come up with a plausible use case, but requests are welcome. As soon as I get access to a decent oscilloscope I will start playing with the aging offset features.
 
 ## Usage
 
@@ -37,7 +48,7 @@ ds.datetime(datetime)
 ```
 
 returns in format of the ESP8266 RTC:
-`(2020, 10, 3, 6, 13, 55, 30, 0) # (year, month, mday, wday, hour, minute, second, 0)
+`(2020, 10, 3, 6, 13, 55, 30, 0) # (year, month, mday, wday, hour, minute, second, 0)`
 
 Set the ESP8266 internal RTC using the DS3231
 ```python
@@ -45,6 +56,10 @@ import machine
 rtc = machine.RTC()
 rtc.datetime(ds.datetime)
 ```
+
+#### Get the date and time
+Call `ds.datetime()` to get the current date and time. This will print a warning on the REPL when the Oscillator Stop Flag (OSF) is set. When not using the REPL the OSF
+
 ### Alarm functions
 
 The DS3231 has 2 internal alarms with can each be set independently to different match conditions.
@@ -102,8 +117,7 @@ ds.alarm2((30, 19, 2), match=ds.AL2_MATCH_DHM, weekday=True)
 ```
 
 #### Checking and clearing alarms
-You can manually check to see if an alarm has triggered. This will return True when the alarm 
-has been triggered and False otherwise. The act of checking clears the alarm register automatically.
+You can manually check to see if an alarm has triggered. This will return True when the alarm has been triggered and False otherwise. The act of checking clears the alarm register automatically.
 
 `DS3231.check_alarm(alarm)`
 
@@ -116,12 +130,19 @@ The DS3231 can output a square wave on the SQW/INT output pin. The following fre
 * `FREQ_4096` 4096 Hz
 * `FREQ_8192` 8192 Hz
 
-When using the SQW/INT pin to output a square wave, the alarm interrupt not avaialable and if you would like
-to check for alarms this will have to be done manually.
+Example:
+```python
+ds.square_wave(freq=ds.FREQ_1024) # Enable 1024 Hz output
+ds.square_wave(freq=False) # Disable SQW output
+```
 
-The DS3231 can also output the crystal frequency at 32768 Hz on a dedicated pin (32K). This output is enabled by default
-on powerup and can me changed as follows:
+Note:
+* When using the SQW/INT pin to output a square wave, the alarm interrupt is not avaialable. Checking for alarms will have to be done manually.
+* When disabling the SQW output signal, the alarm interrupts (even when set before) remain disabled. They can to be set manually afterwards, if desired with `ds.alarm_int()`.
+
+The DS3231 can also output the crystal frequency at 32768 Hz on a dedicated pin (32K). This output is enabled by default on powerup and can me changed as follows:
 
 ```python
-DS3231.output_32kHz() # Enable 32 kHz output
-DS3231.output_32kHz(False) # Disable 32 kHz output
+ds.output_32kHz() # Enable 32 kHz output
+ds.output_32kHz(False) # Disable 32 kHz output
+```
