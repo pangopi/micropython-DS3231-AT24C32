@@ -52,7 +52,7 @@ The alarm has match options ranging from every second to every month.
 
 Call an alarm without arguments and it will return the current alarm setting register.
 
-*alarm 1*
+#### alarm 1
 Set alarm 1:
 `DS3231.alarm1([time[, match[, int_en[, weekday]]]])`
 
@@ -77,7 +77,7 @@ Example:
 ds.alarm1((15, 10, 16), match=ds.AL1_MATCH_HMS)
 ```
 
-*alarm 2*
+#### alarm 2
 Set alarm 2:
 `DS3231.alarm2([time[, match[, int_en[, weekday]]]])`
 
@@ -101,7 +101,7 @@ Example:
 ds.alarm2((30, 19, 2), match=ds.AL2_MATCH_DHM, weekday=True)
 ```
 
-*Checking and clearing alarms*
+#### Checking and clearing alarms
 You can manually check to see if an alarm has triggered. This will return True when the alarm 
 has been triggered and False otherwise. The act of checking clears the alarm register automatically.
 
