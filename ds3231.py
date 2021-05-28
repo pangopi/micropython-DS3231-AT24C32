@@ -100,7 +100,7 @@ class DS3231:
                     hour += 12
             else:
                 # 24h mode
-                hour = bcdtodec(self._timebuf[2] & 0x9f) # Mask bit 6 (12/24 format)
+                hour = bcdtodec(self._timebuf[2] & 0xbf) # Mask bit 6 (12/24 format)
 
             weekday = bcdtodec(self._timebuf[3]) # Can be set arbitrarily by user (1,7)
             day = bcdtodec(self._timebuf[4])
