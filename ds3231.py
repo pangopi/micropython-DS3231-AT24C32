@@ -88,8 +88,8 @@ class DS3231:
             # 0x02 - Hour       0 12/24 AM/PM/20s BCD
             # 0x03 - WDay 1-7   0000 0 BCD
             # 0x04 - Day 1-31   00 BCD
-            # 0x05 - Month 0-12 Century 00 BCD
-            # 0x06 - Year 0-99  BCD
+            # 0x05 - Month 1-12 Century 00 BCD
+            # 0x06 - Year 0-99  BCD (2000-2099)
             seconds = bcdtodec(self._timebuf[0])
             minutes = bcdtodec(self._timebuf[1])
 
