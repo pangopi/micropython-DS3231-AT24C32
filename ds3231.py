@@ -51,10 +51,10 @@ class DS3231:
     """ DS3231 RTC driver.
 
     Hard coded to work with year 2000-2099."""
-    FREQ_1      = const(0)
-    FREQ_1024   = const(1)
-    FREQ_4096   = const(2)
-    FREQ_8192   = const(3)
+    FREQ_1      = const(1)
+    FREQ_1024   = const(2)
+    FREQ_4096   = const(3)
+    FREQ_8192   = const(4)
     SQW_32K     = const(1)
 
     AL1_EVERY_S     = const(15) # Alarm every second
@@ -138,10 +138,10 @@ class DS3231:
         freq : int,
             Not given: returns current setting
             False = disable SQW output,
-            0 =     1 Hz,
-            1 = 1.024 kHz,
-            2 = 4.096 kHz,
-            3 = 8.192 kHz"""
+            1 =     1 Hz,
+            2 = 1.024 kHz,
+            3 = 4.096 kHz,
+            4 = 8.192 kHz"""
         if freq is None:
             return self.i2c.readfrom_mem(self.addr, CONTROL_REG, 1)[0]
 
@@ -151,6 +151,7 @@ class DS3231:
             self.i2c.writeto_mem(self.addr, CONTROL_REG, bytearray([(self._buf[0] & 0xf8) | 0x04]))
         else:
             # Set the frequency in the control reg and at the same time set the INTCN to 0
+            freq -= 1
             self.i2c.readfrom_mem_into(self.addr, CONTROL_REG, self._buf)
             self.i2c.writeto_mem(self.addr, CONTROL_REG, bytearray([(self._buf[0] & 0xe3) | (freq << 3)]))
         return True
