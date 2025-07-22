@@ -1,22 +1,32 @@
-# micropython-DS3231-AT24C32
-MicroPython driver for DS3231 RTC and AT24C32 EEPROM module.
+# ds3231_with_eeprom.py
+MicroPython driver for DS3231 RTC and AT24C32 EEPROM circuitboard.
 
-EEPROM Driver coming soon!
+Authored by Conrad Storz as a vibe coding project. July 22, 2025
 
-## DS3231N
-Driver for the Dallas DS3231, a highly accurate RTC IC.
+This is an effort to expand on the work of Willem Peterse and his project to access the DS3231.
 
-I wrote this driver to make an easier to use and complete driver to access all the functions the DS3231 has. The driver has been designed for use with an ESP8266 but should work on fine on other devices as long as an I2C instance can be given.
+I am adding EEPROM access and access to the temperature sensor on the circuitboard.
 
-Some care has been put into memory use, with most variables buffered when constructing. Checking the alarms and setting the SQW/INT doesn't use memory allocation in the heap and can be used in ISR. This does not imply methods are thread safe.
+# Example usage of the DS3231_With_EEPROM class
+# Uncomment the following lines to test the functionality with a real I2C bus
+# from machine import I2C, Pin
+# i2c = I2C(0, scl=Pin(22), sda=Pin(21))  # Adjust pins as needed
+# ds = DS3231_With_EEPROM(i2c)  # Create an instance of the RTC with EEPROM support  
+    
+# Example usage:
+         
+# ds.write_eeprom(0, b'Hello')            # Write 'Hello' to EEPROM at address 0 Valid addresses are 0-1023
+# data = ds.read_eeprom(0, 5)             # Read 5 bytes from EEPROM starting at address 0
+# print(data)                             # Should print b'Hello', 'b' is a bytes object in Python 
+# temp = ds.read_temperature()            # Read temperature
+# print("Temperature:", temp, "C")        # Print temperature in Celsius
 
-This driver implements both alarms and all available match triggers, interrupts and checks.
+# Note: Ensure that the I2C bus is properly initialized and the DS3231 circuitboard is connected correctly.
+# The EEPROM operations are blocking, so they may take some time depending on the I2C speed and the EEPROM's write cycle time.
+# The temperature reading is in Celsius and can be used for various applications like logging or triggering events
+# based on temperature thresholds. Another choice would be as a time and temperature display device.  
 
-Oscillator Stop Flag (OSF) is checked when displaying the time. Giving an indication of the validity of time data. When not printing to the REPL the OSF can be cheked manually.
-
-Square wave output and also the crystal output can be set.
-
-The temperature readout and aging offset options have not been implemented yet. I see no priority to implement temperature data since I can't come up with a plausible use case, but requests are welcome. As soon as I get access to a decent oscilloscope I will start playing with the aging offset features.
+The following is copied from Willem Peterse original project for your reference.
 
 ## Usage
 

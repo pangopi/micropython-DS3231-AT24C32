@@ -1,0 +1,143 @@
+#! /usr/bin/env micropython
+
+# Micropython driver for the DS3231 RTC Module
+
+# Inspired by the work of: Willem Peterse whose ds3231.py driver is used here.
+# This driver adds EEPROM support using the AT24C32 chip on the DS3231 module.
+# The driver provides methods to read and write EEPROM data. I will also add access to the temperature sensor.
+# I am releasing this under the MIT license, to honor the work of Willem Peterse.
+
+import ds3231_original_version
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2025 by Conrad Storz
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+import time
+
+#from machine import I2C  # Not needed here. User will provide their own I2C instance. 
+#from machine import Pin  # Also does not need to be imported here for same reason.
+
+
+class DS3231Error(Exception):
+    """Custom exception for DS3231 errors."""
+    pass    
+
+
+# Extend the DS3231 RTC driver to include AT24C32 EEPROM support
+class DS3231_With_EEPROM(ds3231_original_version.DS3231):
+    def __init__(self, i2c, address=ds3231_original_version.DS3231_I2C_ADDRESS):
+        """
+        Initialize the DS3231 RTC driver and configure the EEPROM I2C address.
+
+        :param i2c: The I2C bus object for communication
+        :param address: The I2C address of the DS3231 RTC (default from ds3231 module)
+        """
+        # Call parent constructor to set up RTC communication
+        super().__init__(i2c, address)
+        # Default I2C address for AT24C32 EEPROM chip
+        self.eeprom_address = 0x50
+
+    def read_eeprom(self, addr, length=1):
+        """
+        Read a block of data from the EEPROM.
+
+        :param addr: Starting EEPROM memory address (0 - 1023)
+        :param length: Number of bytes to read (1 - 32)
+        :return: Bytes object containing data read
+        :raises ValueError: If `length` is outside allowed range
+        """
+        # Ensure read length does not exceed one page of the AT24C32
+        if length < 1 or length > 32:
+            raise ValueError("Length must be between 1 and 32 bytes.")
+
+        # Send the low byte of the memory address to set EEPROM read pointer
+        self.i2c.writeto(self.eeprom_address, bytes([addr & 0xFF]))
+        # Read the requested number of bytes from EEPROM
+        return self.i2c.readfrom(self.eeprom_address, length)
+
+    def write_eeprom(self, addr, data):
+        """
+        Write a block of data to the EEPROM.
+
+        :param addr: Starting EEPROM memory address (0 - 1023)
+        :param data: Bytes or bytearray to write (up to 32 bytes)
+        :raises ValueError: If address or data length is invalid
+        """
+        # Validate that the base address is within the device range
+        if not (0 <= addr <= 1023):
+            raise ValueError("Address must be between 0 and 1023.")
+        # Validate that data fits within one EEPROM page
+        if len(data) < 1 or len(data) > 32:
+            raise ValueError("Data length must be between 1 and 32 bytes.")
+        
+        # Split the 11-bit address into a high and low byte
+        high_addr = (addr >> 8) & 0xFF
+        low_addr = addr & 0xFF
+        # Prepend address bytes to the payload
+        write_data = bytes([high_addr, low_addr]) + data
+
+        # Perform the write operation to the EEPROM
+        self.i2c.writeto(self.eeprom_address, write_data)
+
+        # EEPROM requires some time to complete a write cycle (max ~5ms)
+        time.sleep(0.01)  # Wait 10ms to be safe
+
+    def read_temperature(self):
+        """
+        Read temperature from the DS3231 RTC and convert to Celsius.
+
+        :return: Temperature in °C as a float
+        """
+        # Read two bytes from the temperature register
+        temp_bytes = self.i2c.readfrom_mem(
+            self.address, ds3231_original_version.DS3231_TEMP_REG, 2
+        )
+
+        # Combine bytes into a single signed 16-bit integer
+        raw_temp = (temp_bytes[0] << 8) | temp_bytes[1]
+        # If negative, convert from two's complement
+        if raw_temp & 0x8000:
+            raw_temp -= 0x10000
+
+        # DS3231 provides temperature in 1/256 °C increments
+        celsius = raw_temp / 256.0
+        return celsius
+
+
+# Example usage of the DS3231_With_EEPROM class
+# Uncomment the following lines to test the functionality with a real I2C bus
+# from machine import I2C, Pin
+# i2c = I2C(0, scl=Pin(22), sda=Pin(21))  # Adjust pins as needed
+# ds = DS3231_With_EEPROM(i2c)  # Create an instance of the RTC with EEPROM support  
+    
+# Example usage:
+         
+# ds.write_eeprom(0, b'Hello')            # Write 'Hello' to EEPROM at address 0 Valid addresses are 0-1023
+# data = ds.read_eeprom(0, 5)             # Read 5 bytes from EEPROM starting at address 0
+# print(data)                             # Should print b'Hello', 'b' is a bytes object in Python 
+# temp = ds.read_temperature()            # Read temperature
+# print("Temperature:", temp, "C")        # Print temperature in Celsius
+
+# Note: Ensure that the I2C bus is properly initialized and the DS3231 circuitboard is connected correctly.
+# The EEPROM operations are blocking, so they may take some time depending on the I2C speed and the EEPROM's write cycle time.
+# The temperature reading is in Celsius and can be used for various applications like logging or triggering events
+# based on temperature thresholds.  
