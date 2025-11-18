@@ -18,6 +18,9 @@ Square wave output and also the crystal output can be set.
 
 The temperature readout and aging offset options have not been implemented yet. I see no priority to implement temperature data since I can't come up with a plausible use case, but requests are welcome. As soon as I get access to a decent oscilloscope I will start playing with the aging offset features.
 
+## Install
+`mpremote mip install "github:pangopi/micropython-DS3231-AT24C32"`
+
 ## Usage
 
 ### Create instance

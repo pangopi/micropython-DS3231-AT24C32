@@ -1,0 +1,6 @@
+{
+    "urls": [
+        ["ds3231.py", "github:pangopi/micropython-DS3231-AT24C32/ds3231.py"]
+    ],
+    "version": "0.1"
+}
